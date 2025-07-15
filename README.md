@@ -362,6 +362,21 @@ composer analyse
 composer quality
 ```
 
+## 📚 Documentation
+
+### Complete Documentation Suite
+
+- **[Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** - Comprehensive deployment and configuration guide
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete API reference with examples
+- **[Vault Integration](docs/VAULT_INTEGRATION.md)** - HashiCorp Vault setup and configuration
+
+### Quick Links
+
+- **Login & Authentication**: See [Authentication & Login](docs/DEPLOYMENT_GUIDE.md#authentication--login)
+- **Vault Configuration**: See [HashiCorp Vault Integration](docs/VAULT_INTEGRATION.md)
+- **Docker Deployment**: See [Docker Deployment](docs/DEPLOYMENT_GUIDE.md#docker-deployment)
+- **API Usage**: See [API Documentation](docs/API_DOCUMENTATION.md)
+
 ## 📚 Architecture
 
 ### Directory Structure
@@ -379,7 +394,10 @@ composer quality
 ├── docker/               # Docker configuration
 ├── tests/                # Test suite
 ├── scripts/              # Utility scripts
-└── docs/                 # Documentation
+└── docs/                 # Comprehensive documentation
+    ├── DEPLOYMENT_GUIDE.md    # Complete deployment guide
+    ├── API_DOCUMENTATION.md   # API reference
+    └── VAULT_INTEGRATION.md   # Vault setup guide
 ```
 
 ### Design Patterns
