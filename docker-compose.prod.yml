@@ -1,0 +1,239 @@
+version: '3.8'
+
+services:
+  # Main PHP Application (Production)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: nextgen-php-app-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_HOST=${DB_HOST:-mysql-prod}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_NAME=${DB_NAME:-nextgen_app}
+      - DB_USER=${DB_USER:-app_user}
+      - DB_PASS=${DB_PASS:-}
+      - REDIS_HOST=${REDIS_HOST:-redis-prod}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - VAULT_URL=${VAULT_URL:-http://vault-prod:8200}
+      - VAULT_TOKEN=${VAULT_TOKEN:-}
+      - VAULT_ROLE=${VAULT_ROLE:-nextgen-php-app}
+      - VAULT_AUTH_METHOD=${VAULT_AUTH_METHOD:-aws}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-nextgen-app-assets}
+      - AWS_CLOUDFRONT_DOMAIN=${AWS_CLOUDFRONT_DOMAIN:-}
+      - JWT_SECRET=${JWT_SECRET:-}
+      - CDN_ENABLED=true
+    volumes:
+      - app_logs:/var/log
+      - app_uploads:/var/www/html/storage/uploads
+    networks:
+      - app-network-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - mysql-prod
+      - redis-prod
+
+  # MySQL Database (Production)
+  mysql-prod:
+    image: mysql:8.0
+    container_name: nextgen-mysql-prod
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${DB_NAME:-nextgen_app}
+      MYSQL_USER: ${DB_USER:-app_user}
+      MYSQL_PASSWORD: ${DB_PASS:-app_password}
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --innodb-buffer-pool-size=512M
+      --max-connections=200
+      --query-cache-type=1
+      --query-cache-size=64M
+      --slow-query-log=1
+      --slow-query-log-file=/var/log/mysql/slow.log
+      --long-query-time=2
+    networks:
+      - app-network-prod
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache (Production)
+  redis-prod:
+    image: redis:7-alpine
+    container_name: nextgen-redis-prod
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --appendonly yes
+      --appendfsync everysec
+    volumes:
+      - redis_data_prod:/data
+    networks:
+      - app-network-prod
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Load Balancer (Production)
+  nginx-lb:
+    image: nginx:alpine
+    container_name: nextgen-nginx-lb
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./docker/nginx/nginx-lb.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - app-network-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Background Job Worker (Production)
+  worker-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: nextgen-worker-prod
+    restart: unless-stopped
+    environment:
+      - APP_ENV=production
+      - DB_HOST=${DB_HOST:-mysql-prod}
+      - REDIS_HOST=${REDIS_HOST:-redis-prod}
+      - VAULT_URL=${VAULT_URL:-http://vault-prod:8200}
+      - VAULT_TOKEN=${VAULT_TOKEN:-}
+      - VAULT_ROLE=${VAULT_ROLE:-nextgen-php-app}
+      - VAULT_AUTH_METHOD=${VAULT_AUTH_METHOD:-aws}
+    volumes:
+      - app_logs:/var/log
+    command: php scripts/worker.php
+    depends_on:
+      - mysql-prod
+      - redis-prod
+    networks:
+      - app-network-prod
+
+  # Log Aggregator (Optional)
+  fluentd:
+    image: fluent/fluentd:v1.14-1
+    container_name: nextgen-fluentd
+    restart: unless-stopped
+    volumes:
+      - ./docker/fluentd/fluent.conf:/fluentd/etc/fluent.conf:ro
+      - app_logs:/var/log/app:ro
+      - nginx_logs:/var/log/nginx:ro
+    ports:
+      - "24224:24224"
+    networks:
+      - app-network-prod
+
+  # Monitoring with Prometheus (Production)
+  prometheus-prod:
+    image: prom/prometheus:latest
+    container_name: nextgen-prometheus-prod
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus-prod.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data_prod:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - app-network-prod
+
+  # Grafana for monitoring dashboards (Production)
+  grafana-prod:
+    image: grafana/grafana:latest
+    container_name: nextgen-grafana-prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data_prod:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - app-network-prod
+
+  # Backup Service (Production)
+  backup:
+    image: alpine:latest
+    container_name: nextgen-backup
+    restart: "no"
+    volumes:
+      - mysql_data_prod:/backup/mysql:ro
+      - redis_data_prod:/backup/redis:ro
+      - app_uploads:/backup/uploads:ro
+      - ./scripts/backup.sh:/backup.sh:ro
+    command: /bin/sh -c "while true; do /backup.sh; sleep 86400; done"
+    networks:
+      - app-network-prod
+
+volumes:
+  mysql_data_prod:
+    driver: local
+  redis_data_prod:
+    driver: local
+  prometheus_data_prod:
+    driver: local
+  grafana_data_prod:
+    driver: local
+  app_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  app_uploads:
+    driver: local
+
+networks:
+  app-network-prod:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
