@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NextGen PHP App - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="glass-effect rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <!-- Logo and Title -->
+        <div class="text-center mb-8">
+            <div class="mx-auto w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4">
+                <i class="fas fa-rocket text-2xl text-purple-600"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white mb-2">NextGen PHP App</h1>
+            <p class="text-purple-100">Sign in to your account</p>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label for="email" class="block text-sm font-medium text-white mb-2">
+                    <i class="fas fa-envelope mr-2"></i>Email Address
+                </label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    required 
+                    class="w-full px-4 py-3 rounded-lg bg-white bg-opacity-20 border border-white border-opacity-30 text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                    placeholder="Enter your email"
+                >
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-white mb-2">
+                    <i class="fas fa-lock mr-2"></i>Password
+                </label>
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required 
+                        class="w-full px-4 py-3 rounded-lg bg-white bg-opacity-20 border border-white border-opacity-30 text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent pr-12"
+                        placeholder="Enter your password"
+                    >
+                    <button 
+                        type="button" 
+                        id="togglePassword" 
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-200 hover:text-white"
+                    >
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <label class="flex items-center text-sm text-purple-100">
+                    <input type="checkbox" class="mr-2 rounded">
+                    Remember me
+                </label>
+                <a href="#" class="text-sm text-white hover:underline">
+                    Forgot password?
+                </a>
+            </div>
+
+            <button 
+                type="submit" 
+                id="loginBtn"
+                class="w-full bg-white text-purple-600 font-semibold py-3 px-4 rounded-lg hover:bg-purple-50 transition duration-200 flex items-center justify-center"
+            >
+                <span id="loginBtnText">Sign In</span>
+                <i id="loginSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+            </button>
+        </form>
+
+        <!-- Register Link -->
+        <div class="text-center mt-6">
+            <p class="text-purple-100">
+                Don't have an account? 
+                <a href="#" id="showRegister" class="text-white font-semibold hover:underline">
+                    Sign up here
+                </a>
+            </p>
+        </div>
+
+        <!-- Error/Success Messages -->
+        <div id="message" class="mt-4 p-3 rounded-lg hidden">
+            <span id="messageText"></span>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-white mb-2">Create Account</h2>
+                <p class="text-purple-100">Join NextGen PHP App</p>
+            </div>
+
+            <form id="registerForm" class="space-y-4">
+                <div>
+                    <label for="regName" class="block text-sm font-medium text-white mb-2">
+                        <i class="fas fa-user mr-2"></i>Full Name
+                    </label>
+                    <input 
+                        type="text" 
+                        id="regName" 
+                        name="name" 
+                        required 
+                        class="w-full px-4 py-3 rounded-lg bg-white bg-opacity-20 border border-white border-opacity-30 text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                        placeholder="Enter your full name"
+                    >
+                </div>
+
+                <div>
+                    <label for="regEmail" class="block text-sm font-medium text-white mb-2">
+                        <i class="fas fa-envelope mr-2"></i>Email Address
+                    </label>
+                    <input 
+                        type="email" 
+                        id="regEmail" 
+                        name="email" 
+                        required 
+                        class="w-full px-4 py-3 rounded-lg bg-white bg-opacity-20 border border-white border-opacity-30 text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                        placeholder="Enter your email"
+                    >
+                </div>
+
+                <div>
+                    <label for="regPassword" class="block text-sm font-medium text-white mb-2">
+                        <i class="fas fa-lock mr-2"></i>Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="regPassword" 
+                        name="password" 
+                        required 
+                        class="w-full px-4 py-3 rounded-lg bg-white bg-opacity-20 border border-white border-opacity-30 text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                        placeholder="Create a password (min 8 characters)"
+                        minlength="8"
+                    >
+                </div>
+
+                <div class="flex space-x-4">
+                    <button 
+                        type="button" 
+                        id="cancelRegister"
+                        class="flex-1 bg-transparent border border-white text-white font-semibold py-3 px-4 rounded-lg hover:bg-white hover:bg-opacity-10 transition duration-200"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit" 
+                        id="registerBtn"
+                        class="flex-1 bg-white text-purple-600 font-semibold py-3 px-4 rounded-lg hover:bg-purple-50 transition duration-200 flex items-center justify-center"
+                    >
+                        <span id="registerBtnText">Sign Up</span>
+                        <i id="registerSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE = '/api/v1';
+        
+        // DOM Elements
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const registerModal = document.getElementById('registerModal');
+        const showRegisterBtn = document.getElementById('showRegister');
+        const cancelRegisterBtn = document.getElementById('cancelRegister');
+        const togglePasswordBtn = document.getElementById('togglePassword');
+        const messageDiv = document.getElementById('message');
+        const messageText = document.getElementById('messageText');
+
+        // Show/Hide Password
+        togglePasswordBtn.addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        });
+
+        // Show Register Modal
+        showRegisterBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            registerModal.classList.remove('hidden');
+            registerModal.classList.add('flex');
+        });
+
+        // Hide Register Modal
+        cancelRegisterBtn.addEventListener('click', function() {
+            registerModal.classList.add('hidden');
+            registerModal.classList.remove('flex');
+        });
+
+        // Show Message
+        function showMessage(text, type = 'error') {
+            messageText.textContent = text;
+            messageDiv.className = `mt-4 p-3 rounded-lg ${type === 'success' ? 'bg-green-500 bg-opacity-20 text-green-100' : 'bg-red-500 bg-opacity-20 text-red-100'}`;
+            messageDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Login Form Handler
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            const loginSpinner = document.getElementById('loginSpinner');
+            
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtnText.textContent = 'Signing In...';
+            loginSpinner.classList.remove('hidden');
+            
+            try {
+                const formData = new FormData(loginForm);
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: formData.get('email'),
+                        password: formData.get('password')
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Store token
+                    localStorage.setItem('auth_token', data.data.token);
+                    localStorage.setItem('user_data', JSON.stringify(data.data.user));
+                    
+                    showMessage('Login successful! Redirecting...', 'success');
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    showMessage(data.message || 'Login failed');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.');
+                console.error('Login error:', error);
+            } finally {
+                // Reset button state
+                loginBtn.disabled = false;
+                loginBtnText.textContent = 'Sign In';
+                loginSpinner.classList.add('hidden');
+            }
+        });
+
+        // Register Form Handler
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const registerBtn = document.getElementById('registerBtn');
+            const registerBtnText = document.getElementById('registerBtnText');
+            const registerSpinner = document.getElementById('registerSpinner');
+            
+            // Show loading state
+            registerBtn.disabled = true;
+            registerBtnText.textContent = 'Creating Account...';
+            registerSpinner.classList.remove('hidden');
+            
+            try {
+                const formData = new FormData(registerForm);
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: formData.get('name'),
+                        email: formData.get('email'),
+                        password: formData.get('password')
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('Account created successfully! Please sign in.', 'success');
+                    registerModal.classList.add('hidden');
+                    registerModal.classList.remove('flex');
+                    registerForm.reset();
+                } else {
+                    showMessage(data.message || 'Registration failed');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.');
+                console.error('Registration error:', error);
+            } finally {
+                // Reset button state
+                registerBtn.disabled = false;
+                registerBtnText.textContent = 'Sign Up';
+                registerSpinner.classList.add('hidden');
+            }
+        });
+
+        // Check if user is already logged in
+        if (localStorage.getItem('auth_token')) {
+            window.location.href = '/dashboard';
+        }
+    </script>
+</body>
+</html>
